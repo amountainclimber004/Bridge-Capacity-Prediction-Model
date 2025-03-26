@@ -33,15 +33,24 @@ condition_rating = st.slider("Condition Rating (1-5)", min_value=1, max_value=5,
 input_data = pd.DataFrame([[span_ft, deck_width_ft, age_years, num_lanes, material, condition_rating]],
                           columns=feature_columns)
 
+# Debug: Check input data
+st.write("Input Data:", input_data)
+
 # Apply preprocessing
 try:
     input_data_transformed = preprocessor.transform(input_data)
+    st.write("Transformed Input Data:", input_data_transformed)
 except ValueError as e:
     st.error(f"Preprocessing error: {e}")
+    st.stop()
+except IndexError as e:
+    st.error(f"Index error: {e}. There might be an issue with the input data or preprocessing.")
     st.stop()
 
 # Predict maximum load capacity
 if st.button("Predict Load Capacity"):
-    prediction = model.predict(input_data_transformed)[0][0]
-    st.success(f"Estimated Maximum Load Capacity: **{prediction:.2f} tons**")
-
+    try:
+        prediction = model.predict(input_data_transformed)[0][0]
+        st.success(f"Estimated Maximum Load Capacity: **{prediction:.2f} tons**")
+    except Exception as e:
+        st.error(f"Error during prediction: {e}")
