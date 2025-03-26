@@ -12,7 +12,7 @@ st.write("Current working directory:", os.getcwd())
 custom_objects = {"mse": tf.keras.losses.MeanSquaredError()}
 
 # Load Preprocessing Pipeline
-preprocessing_path = "preprocessing/preprocessing_pipeline.pkl"
+preprocessing_path = "preprocessing_pipeline.pkl"
 if os.path.exists(preprocessing_path):
     with open(preprocessing_path, 'rb') as f:
         preprocessor = pickle.load(f)
@@ -20,14 +20,14 @@ else:
     st.error(f"Error: Preprocessing file not found at {preprocessing_path}")
 
 # Load Model
-model_path = "models/tf_bridge_model.h5"
+model_path = "tf_bridge_model.h5"
 if os.path.exists(model_path):
     model = tf.keras.models.load_model(model_path, custom_objects=custom_objects)
 else:
     st.error(f"Error: Model file not found at {model_path}")
 
 # Load Sample Data (optional, for reference)
-data_path = "data/lab_11_bridge_data.csv"
+data_path = "lab_11_bridge_data.csv"
 if os.path.exists(data_path):
     df = pd.read_csv(data_path)
 else:
