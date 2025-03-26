@@ -7,14 +7,14 @@ import tensorflow as tf
 # --- Load Saved Artifacts ---
 
 # Load preprocessing pipeline
-with open('preprocessing/preprocessing_pipeline.pkl', 'rb') as f:
+with open('preprocessing_pipeline.pkl', 'rb') as f:
     preprocessor = pickle.load(f)
 
 # Load trained TensorFlow model
-model = tf.keras.models.load_model('models/tf_bridge_model.h5')
+model = tf.keras.models.load_model('tf_bridge_model.h5')
 
 # Optionally, load the CSV to show a sample of the data (for reference)
-data_path = 'data/lab_11_bridge_data.csv'
+data_path = 'lab_11_bridge_data.csv'
 df = pd.read_csv(data_path)
 
 # --- Streamlit App ---
