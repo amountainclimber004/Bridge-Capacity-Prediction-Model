@@ -1,70 +1,61 @@
 import streamlit as st
 import pickle
 import pandas as pd
-import numpy as np
 import tensorflow as tf
+import numpy as np
+import os
 
-# --- Load Saved Artifacts ---
+# Ensure proper working directory
+st.write("Current working directory:", os.getcwd())
 
-# Load preprocessing pipeline
-with open('preprocessing_pipeline.pkl', 'rb') as f:
-    preprocessor = pickle.load(f)
+# Define custom loss function dictionary for loading the model
+custom_objects = {"mse": tf.keras.losses.MeanSquaredError()}
 
-# Load trained TensorFlow model
-model = tf.keras.models.load_model('tf_bridge_model.h5')
+# Load Preprocessing Pipeline
+preprocessing_path = "preprocessing/preprocessing_pipeline.pkl"
+if os.path.exists(preprocessing_path):
+    with open(preprocessing_path, 'rb') as f:
+        preprocessor = pickle.load(f)
+else:
+    st.error(f"Error: Preprocessing file not found at {preprocessing_path}")
 
-# Optionally, load the CSV to show a sample of the data (for reference)
-data_path = 'lab_11_bridge_data.csv'
-df = pd.read_csv(data_path)
+# Load Model
+model_path = "models/tf_bridge_model.h5"
+if os.path.exists(model_path):
+    model = tf.keras.models.load_model(model_path, custom_objects=custom_objects)
+else:
+    st.error(f"Error: Model file not found at {model_path}")
 
-# --- Streamlit App ---
+# Load Sample Data (optional, for reference)
+data_path = "data/lab_11_bridge_data.csv"
+if os.path.exists(data_path):
+    df = pd.read_csv(data_path)
+else:
+    st.warning(f"Warning: Dataset file not found at {data_path}")
 
-st.title("Bridge Maximum Load Prediction")
+# Streamlit App UI
+st.title("Bridge Load Capacity Prediction")
+st.write("Enter bridge parameters below to predict its maximum load capacity.")
 
-st.markdown("""
-This web app predicts the maximum load capacity (in tons) of a bridge based on its characteristics.
-Please enter the bridge details below:
-""")
+# User Inputs
+span_ft = st.number_input("Bridge Span (ft)", min_value=50, max_value=1000, value=250)
+deck_width_ft = st.number_input("Deck Width (ft)", min_value=10, max_value=100, value=40)
+age_years = st.number_input("Age of Bridge (years)", min_value=0, max_value=150, value=20)
+num_lanes = st.number_input("Number of Lanes", min_value=1, max_value=10, value=2)
 
-# --- User Inputs ---
+# Material Selection
+materials = ['Steel', 'Concrete', 'Composite']
+material = st.selectbox("Bridge Material", materials)
+material_encoded = [1 if material == m else 0 for m in materials]  # One-hot encoding
 
-col1, col2 = st.columns(2)
-with col1:
-    span_ft = st.number_input("Span (ft)", min_value=0.0, value=250.0)
-    deck_width_ft = st.number_input("Deck Width (ft)", min_value=0.0, value=40.0)
-    age_years = st.number_input("Age (Years)", min_value=0, value=20)
-with col2:
-    num_lanes = st.number_input("Number of Lanes", min_value=1, value=4)
-    condition_rating = st.number_input("Condition Rating (1-5)", min_value=1, max_value=5, value=4)
-    material = st.selectbox("Material", options=["Steel", "Concrete", "Composite"])
+condition_rating = st.slider("Condition Rating (1 - Poor to 5 - Excellent)", min_value=1, max_value=5, value=3)
 
-# Prepare a DataFrame for the user input
-input_data = pd.DataFrame({
-    'Span_ft': [span_ft],
-    'Deck_Width_ft': [deck_width_ft],
-    'Age_Years': [age_years],
-    'Num_Lanes': [num_lanes],
-    'Condition_Rating': [condition_rating],
-    'Material': [material]
-})
+# Prepare Input Data for Prediction
+input_data = np.array([[span_ft, deck_width_ft, age_years, num_lanes, *material_encoded, condition_rating]])
+input_data_transformed = preprocessor.transform(input_data)  # Apply the same preprocessing as during training
 
-# --- Display Sample Data ---
-st.markdown("### Sample Data")
-if st.checkbox("Show sample data from the dataset"):
-    st.dataframe(df.head(10))
+# Prediction Button
+if st.button("Predict Load Capacity"):
+    prediction = model.predict(input_data_transformed)
+    st.success(f"Estimated Maximum Load Capacity: {prediction[0][0]:.2f} tons")
 
-# --- Prediction ---
-if st.button("Predict Maximum Load"):
-    # Preprocess the user input using the saved pipeline
-    input_processed = preprocessor.transform(input_data)
-    
-    # Make prediction with the loaded model
-    prediction = model.predict(input_processed)
-    predicted_load = prediction[0][0]
-    
-    st.success(f"Predicted Maximum Load: {predicted_load:.2f} Tons")
-
-st.markdown("""
----
-**Note:** This model and dataset are created for educational purposes only.
-""")
